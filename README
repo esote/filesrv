@@ -2,11 +2,11 @@ NAME
 	websrv - single-file web server
 
 SYNOPSIS
-	websrv [-l] [-n port] file
+	websrv [-l] [-p port] file
 
 DESCRIPTION
 	websrv is a single-file web server. It handles TCP connections serially
-	to avoid fork exhaustion during high traffic. The -n option specifies
+	to avoid fork exhaustion during high traffic. The -p option specifies
 	the listening port. The default is to listen on port 8080.
 
 	The -l option specifies that the input file requires lazy reading. This

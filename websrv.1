@@ -23,7 +23,7 @@
 .Sh SYNOPSIS
 .Nm websrv
 .Op Fl l
-.Op Fl n Ar port
+.Op Fl p Ar port
 file
 .Sh DESCRIPTION
 .Nm websrv
@@ -31,7 +31,7 @@ is a single-file web server.
 It handles TCP connections serially to avoid fork exhaustion during high
 traffic.
 The
-.Fl n
+.Fl p
 option specifies the listening port.
 The default is to listen on port 8080.
 .Pp
