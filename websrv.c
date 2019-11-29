@@ -141,8 +141,11 @@ main(int argc, char *argv[])
 	opt = 1;
 	port = 8080;
 
-	while ((ch = getopt(argc, argv, "p:l")) != -1) {
+	while ((ch = getopt(argc, argv, "lp:")) != -1) {
 		switch (ch) {
+		case 'l':
+			lazy = 1;
+			break;
 		case 'p':
 			n = strtoul(optarg, &end, 0);
 
@@ -155,9 +158,6 @@ main(int argc, char *argv[])
 			}
 
 			port = (uint16_t)n;
-			break;
-		case 'l':
-			lazy = 1;
 			break;
 		default:
 			(void)fprintf(stderr, "usage: %s [-l] [-p port] file\n",
