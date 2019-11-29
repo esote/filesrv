@@ -1,0 +1,72 @@
+.\"
+.\" Copyright (C) 2019  Esote
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU Affero General Public License as published
+.\" by the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU Affero General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU Affero General Public License
+.\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
+.\"
+.Dd $Mdocdate: November 29 2019 $
+.Dt WEBSRV 1
+.Os
+.Sh NAME
+.Nm websrv
+.Nd single-file web server
+.Sh SYNOPSIS
+.Nm websrv
+.Op Fl l
+.Op Fl n Ar port
+file
+.Sh DESCRIPTION
+.Nm websrv
+is a single-file web server.
+It handles TCP connections serially to avoid fork exhaustion during high
+traffic.
+The
+.Fl n
+option specifies the listening port.
+The default is to listen on port 8080.
+.Pp
+The
+.Fl l
+option specifies that the input file requires lazy reading.
+This is usually the case with large files which cannot be comfortably
+pre-loaded.
+The default behavior is to memory-map the entire input file.
+.Pp
+.Nm websrv
+will try to persist connection errors, and will continue to accept connections
+after it encounters any errors.
+It does not read any portion of the request data.
+.Pp
+When sent
+.Dv SIGINT ,
+.Nm websrv
+will clean itself up and exit gracefully.
+.Pp
+If given port 0,
+.Nm websrv
+will print the port number assigned by the kernel.
+.Pp
+If
+.Nm websrv
+is run with root privileges, it will chroot to the current working directory
+after opening the input file.
+.Sh AUTHORS
+.Nm websrv
+was written by
+.An Esote
+.Sh COPYRIGHT
+Copyright (c) 2019 Esote.
+There is NO warranty.
+You may redistribute this software under the terms of the GNU Affero General
+Public License.
+For more information, see the LICENSE file.
