@@ -1,5 +1,5 @@
 /*
- * websrv is a single-file web server.
+ * filesrv is a single-file web server.
  * Copyright (C) 2019 Esote
  *
  * This program is free software: you can redistribute it and/or modify

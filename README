@@ -1,11 +1,11 @@
 NAME
-	websrv - single-file web server
+	filesrv - single-file web server
 
 SYNOPSIS
-	websrv [-l] [-p port] file
+	filesrv [-l] [-p port] file
 
 DESCRIPTION
-	websrv is a single-file web server. It handles TCP connections serially
+	filesrv is a single-file web server. It handles TCP connections serially
 	to avoid fork exhaustion during high traffic. The -p option specifies
 	the listening port. The default is to listen on port 8080.
 
@@ -13,20 +13,20 @@ DESCRIPTION
 	is usually the case with large files which cannot be comfortably
 	pre-loaded. The default behavior is to memory-map the entire input file.
 
-	websrv will try to persist connection errors, and will continue to
+	filesrv will try to persist connection errors, and will continue to
 	accept connections after it encounters any errors. It does not read any
 	portion of the request data.
 
-	When sent SIGINT, websrv will clean itself up and exit gracefully.
+	When sent SIGINT, filesrv will clean itself up and exit gracefully.
 
-	If given port 0, websrv will print the port number assigned by the
+	If given port 0, filesrv will print the port number assigned by the
 	kernel.
 
-	If websrv is run with root privileges, it will chroot to the current
+	If filesrv is run with root privileges, it will chroot to the current
 	working directory after opening the input file.
 
 AUTHORS
-	websrv was written by Esote.
+	filesrv was written by Esote.
 
 COPYRIGHT
 	Copyright (c) 2019 Esote. There is NO warranty. You may redistribute

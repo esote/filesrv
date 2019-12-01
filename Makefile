@@ -1,5 +1,5 @@
-PROG=	websrv
-SRCS=	websrv.c
+PROG=	filesrv
+SRCS=	filesrv.c
 
 CFLAGS=		-O2 -fstack-protector -D_FORTIFY_SOURCE=2 -pie -fPIE
 LDFLAGS=	-Wl,-z,now -Wl,-z,relro

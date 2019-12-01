@@ -15,18 +15,18 @@
 .\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
 .\"
 .Dd $Mdocdate: November 29 2019 $
-.Dt WEBSRV 1
+.Dt FILESRV 1
 .Os
 .Sh NAME
-.Nm websrv
+.Nm filesrv
 .Nd single-file web server
 .Sh SYNOPSIS
-.Nm websrv
+.Nm filesrv
 .Op Fl l
 .Op Fl p Ar port
 file
 .Sh DESCRIPTION
-.Nm websrv
+.Nm filesrv
 is a single-file web server.
 It handles TCP connections serially to avoid fork exhaustion during high
 traffic.
@@ -42,26 +42,26 @@ This is usually the case with large files which cannot be comfortably
 pre-loaded.
 The default behavior is to memory-map the entire input file.
 .Pp
-.Nm websrv
+.Nm filesrv
 will try to persist connection errors, and will continue to accept connections
 after it encounters any errors.
 It does not read any portion of the request data.
 .Pp
 When sent
 .Dv SIGINT ,
-.Nm websrv
+.Nm filesrv
 will clean itself up and exit gracefully.
 .Pp
 If given port 0,
-.Nm websrv
+.Nm filesrv
 will print the port number assigned by the kernel.
 .Pp
 If
-.Nm websrv
+.Nm filesrv
 is run with root privileges, it will chroot to the current working directory
 after opening the input file.
 .Sh AUTHORS
-.Nm websrv
+.Nm filesrv
 was written by
 .An Esote
 .Sh COPYRIGHT
