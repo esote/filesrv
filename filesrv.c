@@ -34,6 +34,7 @@
 
 #define BUF_LEN		4096
 #define QUEUE_LEN	10
+#define USAGE		"usage: %s [-l] [-p port] [-t timeout] file\n"
 
 /* Memory-mapped file. */
 static uint8_t *file;
@@ -130,6 +131,7 @@ main(int argc, char *argv[])
 	struct sigaction act;
 	struct sockaddr_in addr;
 	socklen_t addrlen;
+	struct timeval tv;
 	unsigned long n;
 	int ch;
 	int opt;
@@ -137,11 +139,13 @@ main(int argc, char *argv[])
 	uint16_t port;
 
 	addrlen = sizeof(addr);
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
 	lazy = 0;
 	opt = 1;
 	port = 8080;
 
-	while ((ch = getopt(argc, argv, "lp:")) != -1) {
+	while ((ch = getopt(argc, argv, "lp:t:")) != -1) {
 		switch (ch) {
 		case 'l':
 			lazy = 1;
@@ -159,17 +163,25 @@ main(int argc, char *argv[])
 
 			port = (uint16_t)n;
 			break;
+		case 't':
+			tv.tv_sec = (time_t)strtoul(optarg, &end, 0);
+
+			if (errno == EINVAL || errno == ERANGE) {
+				err(1, "timeout string invalid");
+			} else if (optarg == end) {
+				err(1, "no timeout string read");
+			}
+
+			break;
 		default:
-			(void)fprintf(stderr, "usage: %s [-l] [-p port] file\n",
-				argv[0]);
+			(void)fprintf(stderr, USAGE, argv[0]);
 			return 1;
 		}
 	}
 
 	argc -= optind;
 	if (argc == 0) {
-		(void)fprintf(stderr, "usage: %s [-l] [-p port] file\n",
-			argv[0]);
+		(void)fprintf(stderr, USAGE, argv[0]);
 		return 1;
 	}
 
@@ -182,10 +194,8 @@ main(int argc, char *argv[])
 		map(fd);
 	}
 
-	if (geteuid() == 0) {
-		if (chroot(".") == -1) {
-			err(1, "chroot");
-		}
+	if (geteuid() == 0 && chroot(".") == -1) {
+		err(1, "chroot");
 	}
 
 #ifdef __OpenBSD__
@@ -241,6 +251,11 @@ main(int argc, char *argv[])
 		/* Dear prospective client, please shut up already. */
 		if (shutdown(afd, SHUT_RD) == -1) {
 			warn("shutdown rd");
+			goto done;
+		}
+
+		if (setsockopt(afd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) == -1) {
+			warn("setsockopt SO_SNDTIMEO");
 			goto done;
 		}
 

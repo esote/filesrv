@@ -24,6 +24,7 @@
 .Nm filesrv
 .Op Fl l
 .Op Fl p Ar port
+.Op Fl t Ar timeout
 file
 .Sh DESCRIPTION
 .Nm filesrv
@@ -41,6 +42,12 @@ option specifies that the input file requires lazy reading.
 This is usually the case with large files which cannot be comfortably
 pre-loaded.
 The default behavior is to memory-map the entire input file.
+.Pp
+The
+.Fl t
+option specifies the write timeout in seconds.
+A timeout of 0 waits indefinitely.
+The default timeout is 1 second.
 .Pp
 .Nm filesrv
 will try to persist connection errors, and will continue to accept connections

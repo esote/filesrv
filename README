@@ -2,7 +2,7 @@ NAME
 	filesrv - single-file web server
 
 SYNOPSIS
-	filesrv [-l] [-p port] file
+	filesrv [-l] [-p port] [-t timeout] file
 
 DESCRIPTION
 	filesrv is a single-file web server. It handles TCP connections serially
@@ -12,6 +12,9 @@ DESCRIPTION
 	The -l option specifies that the input file requires lazy reading. This
 	is usually the case with large files which cannot be comfortably
 	pre-loaded. The default behavior is to memory-map the entire input file.
+
+	The -t option specifies the write timeout in seconds. A timeout of 0
+	waits indefinitely. The default timeout is 1 second.
 
 	filesrv will try to persist connection errors, and will continue to
 	accept connections after it encounters any errors. It does not read any
