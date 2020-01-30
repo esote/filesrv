@@ -25,8 +25,8 @@
 #define TIMEOUT(X)	((X) == EAGAIN || (X) == EWOULDBLOCK || (X) == EINPROGRESS)
 #define DOT(X)		(strcmp((X), ".") == 0 || strcmp((X), "..") == 0)
 
-static void	writefile(int, char *, off_t);
-static void	writedir(int, char *);
+static void	writefile(int, char *, off_t, int);
+static void	writedir(int, char *, int);
 static int	cat(int, int);
 static void	status(int, char *);
 
@@ -45,8 +45,11 @@ respond(int afd, char *dir, size_t dirlen)
 	struct stat st;
 	size_t len;
 	ssize_t n;
+	int head;
 	char *line, *word, *lline, *lword;
 	char *path;
+
+	head = 0;
 
 	if ((n = read(afd, rbuf, BUF_LEN-1)) == -1) {
 		if (TIMEOUT(errno)) {
@@ -76,7 +79,9 @@ respond(int afd, char *dir, size_t dirlen)
 		return;
 	}
 
-	if (strcmp(word, "GET") != 0) {
+	if (strcmp(word, "HEAD") == 0) {
+		head = 1;
+	} else if (strcmp(word, "GET") != 0) {
 		status(afd, HTTP_405);
 		return;
 	}
@@ -135,16 +140,16 @@ respond(int afd, char *dir, size_t dirlen)
 	}
 
 	if (S_ISREG(st.st_mode)) {
-		writefile(afd, path, st.st_size);
+		writefile(afd, path, st.st_size, head);
 	} else if (S_ISDIR(st.st_mode)) {
-		writedir(afd, path);
+		writedir(afd, path, head);
 	} else {
 		status(afd, HTTP_404);
 	}
 }
 
 static void
-writefile(int afd, char *path, off_t size)
+writefile(int afd, char *path, off_t size, int head)
 {
 	ssize_t n;
 	int fd;
@@ -173,7 +178,7 @@ writefile(int afd, char *path, off_t size)
 		goto done;
 	}
 
-	if (write(afd, wbuf, (size_t)n) == -1) {
+	if (write(afd, wbuf, (size_t)n) == -1 || head) {
 		goto done;
 	}
 
@@ -190,7 +195,7 @@ done:
 }
 
 static void
-writedir(int afd, char *path)
+writedir(int afd, char *path, int head)
 {
 	DIR *dir;
 	struct dirent *d;
@@ -265,7 +270,7 @@ writedir(int afd, char *path)
 		goto done;
 	}
 
-	if (write(afd, wbuf, (size_t)n) == -1) {
+	if (write(afd, wbuf, (size_t)n) == -1 || head) {
 		goto done;
 	}
 

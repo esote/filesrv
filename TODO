@@ -1,6 +1,4 @@
 TODO:
-	handle HEAD requests
-
 	respond with last-modified header
 
 	handle content range requests
