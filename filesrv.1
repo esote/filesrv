@@ -1,5 +1,5 @@
 .\"
-.\" Copyright (C) 2019  Esote
+.\" Copyright (C) 2020  Esote
 .\"
 .\" This program is free software: you can redistribute it and/or modify
 .\" it under the terms of the GNU Affero General Public License as published
@@ -14,59 +14,42 @@
 .\" You should have received a copy of the GNU Affero General Public License
 .\" along with this program.  If not, see <https://www.gnu.org/licenses/>.
 .\"
-.Dd $Mdocdate: December 9 2019 $
+.Dd $Mdocdate: January 30 2019 $
 .Dt FILESRV 1
 .Os
 .Sh NAME
 .Nm filesrv
-.Nd single-file web server
+.Nd filesystem web server
 .Sh SYNOPSIS
 .Nm filesrv
-.Op Fl l
+.Op Fl d
 .Op Fl p Ar port
 .Op Fl t Ar timeout
-file
+.Op Fl u Ar user
+dir
 .Sh DESCRIPTION
 .Nm filesrv
-is a single-file web server.
-It handles TCP connections serially to avoid fork exhaustion during high
-traffic.
+is a filesystem web server.
+It responds with directory listings or file contents based on the request path.
+The
+.Fl d
+option daemonizes the process.
 The
 .Fl p
-option specifies the listening port.
-The default is to listen on port 8080.
-.Pp
-The
-.Fl l
-option specifies that the input file requires lazy reading.
-This is usually the case with large files which cannot be comfortably
-pre-loaded.
-The default behavior is to memory-map the entire input file.
-.Pp
-The
+option specifies the listening port, otherwise 8080 by default.
 .Fl t
-option specifies the write timeout in seconds.
-A timeout of 0 waits indefinitely.
-The default timeout is 1 second.
+option specifies the read and write timeout, otherwise 10 seconds by default.
 .Pp
+The
+.Fl u
+option causes
 .Nm filesrv
-will try to persist connection errors, and will continue to accept connections
-after it encounters any errors.
-It does not read any portion of the request data.
-.Pp
-When sent
-.Dv SIGINT ,
+to drop privileges to the specified user.
+This is only available when
 .Nm filesrv
-will clean itself up and exit gracefully.
-.Pp
-If given port 0,
-.Nm filesrv
-will print the port number assigned by the kernel.
-.Pp
-If
-.Nm filesrv
-is run with root privileges, it will chroot to the current working directory
-after opening the input file.
+is run as root.
+It is useful when listening on a privileged lower port without needing
+persistent root access.
 .Sh AUTHORS
 .Nm filesrv
 was written by
@@ -74,7 +57,7 @@ was written by
 .Sh COPYRIGHT
 Copyright
 .Pq c
-2019 Esote.
+2020 Esote.
 There is NO warranty.
 You may redistribute this software under the terms of the GNU Affero General
 Public License.

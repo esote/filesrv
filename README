@@ -1,37 +1,25 @@
 NAME
-	filesrv - single-file web server
+	filesrv - filesystem web server
 
 SYNOPSIS
-	filesrv [-l] [-p port] [-t timeout] file
+	filesrv [-d] [-p port] [-t timeout] [-u user] dir
 
 DESCRIPTION
-	filesrv is a single-file web server. It handles TCP connections serially
-	to avoid fork exhaustion during high traffic. The -p option specifies
-	the listening port. The default is to listen on port 8080.
+	filesrv is a filesystem web server. It responds with directory listings
+	or file contents based on the request path. The -d option daemonizes the
+	process. The -p option specifies the listening port, otherwise 8080 by
+	default. -t option specifies the read and write timeout, otherwise 10
+	seconds by default.
 
-	The -l option specifies that the input file requires lazy reading. This
-	is usually the case with large files which cannot be comfortably
-	pre-loaded. The default behavior is to memory-map the entire input file.
-
-	The -t option specifies the write timeout in seconds. A timeout of 0
-	waits indefinitely. The default timeout is 1 second.
-
-	filesrv will try to persist connection errors, and will continue to
-	accept connections after it encounters any errors. It does not read any
-	portion of the request data.
-
-	When sent SIGINT, filesrv will clean itself up and exit gracefully.
-
-	If given port 0, filesrv will print the port number assigned by the
-	kernel.
-
-	If filesrv is run with root privileges, it will chroot to the current
-	working directory after opening the input file.
+	The -u option causes filesrv to drop privileges to the specified user.
+	This is only available when filesrv is run as root. It is useful when
+	listening on a privileged lower port without needing persistent root
+	access.
 
 AUTHORS
 	filesrv was written by Esote.
 
 COPYRIGHT
-	Copyright (c) 2019 Esote. There is NO warranty. You may redistribute
+	Copyright (c) 2020 Esote. There is NO warranty. You may redistribute
 	this software under the terms of the GNU Affero General Public License.
 	For more information, see the LICENSE file.
