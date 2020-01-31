@@ -9,11 +9,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "filesrv.h"
 
-#define BUF_LEN	8192
+#define BUF_LEN		8192
+#define TBUF_LEN	512
 
 #if BUF_LEN < PATH_MAX
 #error BUF_LEN too small
@@ -22,27 +24,31 @@
 #define NL	"\r\n"
 #define SP	" \t\v\f"
 
+#define TIMEFMT	"%a, %d %b %Y %T GMT"
+
 #define TIMEOUT(X)	((X) == EAGAIN || (X) == EWOULDBLOCK || (X) == EINPROGRESS)
 #define DOT(X)		(strcmp((X), ".") == 0 || strcmp((X), "..") == 0)
 
-static void	writefile(int, char *, off_t, int);
-static void	writedir(int, char *, int);
-static int	cat(int, int);
-static void	status(int, char *);
+static void	writefile(int, char *, char *, char *, off_t, int);
+static void	writedir(int, char *, char *, char *, int);
+static int	cat(int, int, char *);
+static void	status(int, char *, char *);
 
 #define HTTP_400	"400 Bad Request"
 #define HTTP_403	"403 Forbidden"
 #define HTTP_404	"404 Not Found"
 #define HTTP_405	"405 Method Not Allowed"
 #define HTTP_408	"408 Request Timeout"
-
-static char rbuf[BUF_LEN]; /* read buffer, path buffer */
-static char wbuf[BUF_LEN]; /* response buffer, path swap buffer */
+#define HTTP_500	"500 Internal Server Error"
 
 void
 respond(int afd, char *dir, size_t dirlen)
 {
+	static char rbuf[BUF_LEN]; /* read buffer, path buffer */
+	static char wbuf[BUF_LEN]; /* response buffer, path swap buffer */
+	static char tbuf[TBUF_LEN]; /* time format buffer */
 	struct stat st;
+	struct tm *tm;
 	size_t len;
 	ssize_t n;
 	int head;
@@ -53,7 +59,7 @@ respond(int afd, char *dir, size_t dirlen)
 
 	if ((n = read(afd, rbuf, BUF_LEN-1)) == -1) {
 		if (TIMEOUT(errno)) {
-			status(afd, HTTP_408);
+			status(afd, wbuf, HTTP_408);
 		} else {
 			warn("read");
 		}
@@ -70,24 +76,24 @@ respond(int afd, char *dir, size_t dirlen)
 	}
 
 	if ((line = strtok_r(rbuf, NL, &lline)) == NULL) {
-		status(afd, HTTP_400);
+		status(afd, wbuf, HTTP_400);
 		return;
 	}
 
 	if ((word = strtok_r(line, SP, &lword)) == NULL) {
-		status(afd, HTTP_400);
+		status(afd, wbuf, HTTP_400);
 		return;
 	}
 
 	if (strcmp(word, "HEAD") == 0) {
 		head = 1;
 	} else if (strcmp(word, "GET") != 0) {
-		status(afd, HTTP_405);
+		status(afd, wbuf, HTTP_405);
 		return;
 	}
 
 	if ((path = strtok_r(NULL, SP NL, &lword)) == NULL) {
-		status(afd, HTTP_400);
+		status(afd, wbuf, HTTP_400);
 		return;
 	}
 
@@ -98,7 +104,7 @@ respond(int afd, char *dir, size_t dirlen)
 	len = strlen(path);
 	if (len + dirlen + 1 > BUF_LEN) {
 		/* ENAMETOOLONG */
-		status(afd, HTTP_404);
+		status(afd, wbuf, HTTP_404);
 		return;
 	}
 
@@ -108,48 +114,58 @@ respond(int afd, char *dir, size_t dirlen)
 	if ((path = realpath(wbuf, rbuf)) == NULL) {
 		switch (errno) {
 		case EACCES:
-			status(afd, HTTP_403);
+			status(afd, wbuf, HTTP_403);
 			break;
 		case ENOENT:
-			status(afd, HTTP_404);
+			status(afd, wbuf, HTTP_404);
 			break;
 		default:
-			status(afd, HTTP_400);
+			status(afd, wbuf, HTTP_400);
 		}
 		return;
 	}
 
 	if (memcmp(dir, path, dirlen) != 0) {
 		/* Path escapes sandbox. */
-		status(afd, HTTP_404);
+		status(afd, wbuf, HTTP_404);
 		return;
 	}
 
 	if (stat(path, &st) == -1) {
 		switch (errno) {
 		case EACCES:
-			status(afd, HTTP_403);
+			status(afd, wbuf, HTTP_403);
 			break;
 		case ENOENT:
-			status(afd, HTTP_404);
+			status(afd, wbuf, HTTP_404);
 			break;
 		default:
-			status(afd, HTTP_400);
+			status(afd, wbuf, HTTP_400);
 		}
 		return;
 	}
 
+	if ((tm = gmtime(&st.st_mtim.tv_sec)) == NULL) {
+		status(afd, wbuf, HTTP_500);
+		return;
+	}
+
+	if (strftime(tbuf, TBUF_LEN, TIMEFMT, tm) == 0) {
+		status(afd, wbuf, HTTP_500);
+		return;
+	}
+
 	if (S_ISREG(st.st_mode)) {
-		writefile(afd, path, st.st_size, head);
+		writefile(afd, wbuf, path, tbuf, st.st_size, head);
 	} else if (S_ISDIR(st.st_mode)) {
-		writedir(afd, path, head);
+		writedir(afd, wbuf, path, tbuf, head);
 	} else {
-		status(afd, HTTP_404);
+		status(afd, wbuf, HTTP_404);
 	}
 }
 
 static void
-writefile(int afd, char *path, off_t size, int head)
+writefile(int afd, char *wbuf, char *path, char *time, off_t size, int head)
 {
 	ssize_t n;
 	int fd;
@@ -157,13 +173,13 @@ writefile(int afd, char *path, off_t size, int head)
 	if ((fd = open(path, O_RDONLY)) == -1) {
 		switch (errno) {
 		case EACCES:
-			status(afd, HTTP_403);
+			status(afd, wbuf, HTTP_403);
 			break;
 		case ENOENT:
-			status(afd, HTTP_404);
+			status(afd, wbuf, HTTP_404);
 			break;
 		default:
-			status(afd, HTTP_400);
+			status(afd, wbuf, HTTP_400);
 		}
 		return;
 	}
@@ -171,10 +187,12 @@ writefile(int afd, char *path, off_t size, int head)
 	n = snprintf(wbuf, BUF_LEN, "HTTP/1.1 200 OK\r\n"
 		"Content-Length: %zd\r\n"
 		"Content-Type: text/plain; charset=utf-8\r\n"
-		"\r\n", (ssize_t)size);
+		"Last-Modified: %s\r\n"
+		"\r\n", (ssize_t)size, time);
 
 	if (n < 0) {
 		warnx("snprintf");
+		status(afd, wbuf, HTTP_500);
 		goto done;
 	}
 
@@ -182,7 +200,7 @@ writefile(int afd, char *path, off_t size, int head)
 		goto done;
 	}
 
-	if (cat(fd, afd) == -1) {
+	if (cat(fd, afd, wbuf) == -1) {
 		if (!TIMEOUT(errno)) {
 			warn("cat");
 		}
@@ -195,7 +213,7 @@ done:
 }
 
 static void
-writedir(int afd, char *path, int head)
+writedir(int afd, char *wbuf, char *path, char *time, int head)
 {
 	DIR *dir;
 	struct dirent *d;
@@ -206,13 +224,13 @@ writedir(int afd, char *path, int head)
 	if ((dir = opendir(path)) == NULL) {
 		switch (errno) {
 		case EACCES:
-			status(afd, HTTP_403);
+			status(afd, wbuf, HTTP_403);
 			break;
 		case ENOENT:
-			status(afd, HTTP_404);
+			status(afd, wbuf, HTTP_404);
 			break;
 		default:
-			status(afd, HTTP_400);
+			status(afd, wbuf, HTTP_400);
 		}
 		return;
 	}
@@ -251,9 +269,10 @@ writedir(int afd, char *path, int head)
 
 	if (errno != 0) {
 		if (errno == ENOENT) {
-			status(afd, HTTP_404);
+			status(afd, wbuf, HTTP_404);
 		} else {
 			warn("readddir first");
+			status(afd, wbuf, HTTP_500);
 		}
 		goto done;
 	}
@@ -263,10 +282,12 @@ writedir(int afd, char *path, int head)
 	n = snprintf(wbuf, BUF_LEN, "HTTP/1.1 200 OK\r\n"
 		"Content-Length: %zu\r\n"
 		"Content-Type: text/html; charset=utf-8\r\n"
-		"\r\n", size);
+		"Last-Modified: %s\r\n"
+		"\r\n", size, time);
 
 	if (n < 0) {
 		warnx("snprintf");
+		status(afd, wbuf, HTTP_500);
 		goto done;
 	}
 
@@ -316,7 +337,7 @@ done:
 }
 
 static int
-cat(int in, int out)
+cat(int in, int out, char *wbuf)
 {
 	ssize_t r, off, w;
 	w = 0;
@@ -337,7 +358,7 @@ cat(int in, int out)
 }
 
 static void
-status(int fd, char *code)
+status(int fd, char *wbuf, char *code)
 {
 	int n = snprintf(wbuf, BUF_LEN, "HTTP/1.1 %s\r\n"
 		"Content-Length: %zu\r\n"

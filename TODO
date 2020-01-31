@@ -1,6 +1,4 @@
 TODO:
-	respond with last-modified header
-
 	handle content range requests
 
 	infer file MIME type using https://mimesniff.spec.whatwg.org/
