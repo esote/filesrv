@@ -1,3 +1,9 @@
+#ifndef __OpenBSD__
+/* need DT_DIR from readdir */
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
+#endif
+
 #include <sys/socket.h>
 #include <sys/stat.h>
 
@@ -24,7 +30,7 @@
 #define NL	"\r\n"
 #define SP	" \t\v\f"
 
-#define TIMEFMT	"%a, %d %b %Y %T GMT"
+#define TIMEFMT	"%a, %d %b %Y %H:%M:%S GMT"
 
 #define TIMEOUT(X)	((X) == EAGAIN || (X) == EWOULDBLOCK || (X) == EINPROGRESS)
 #define DOT(X)		(strcmp((X), ".") == 0 || strcmp((X), "..") == 0)
@@ -186,9 +192,9 @@ writefile(int afd, char *wbuf, char *path, char *time, off_t size, int head)
 
 	n = snprintf(wbuf, BUF_LEN, "HTTP/1.1 200 OK\r\n"
 		"Content-Length: %zd\r\n"
-		"Content-Type: text/plain; charset=utf-8\r\n"
+		"Content-Type: %s\r\n"
 		"Last-Modified: %s\r\n"
-		"\r\n", (ssize_t)size, time);
+		"\r\n", (ssize_t)size, sniff(fd), time);
 
 	if (n < 0) {
 		warnx("snprintf");

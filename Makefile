@@ -1,5 +1,5 @@
 PROG=	filesrv
-SRCS=	filesrv.c respond.c
+SRCS=	filesrv.c respond.c mime.c
 
 CFLAGS=		-O2 -fstack-protector -D_FORTIFY_SOURCE=2 -pie -fPIE
 LDFLAGS=	-Wl,-z,now -Wl,-z,relro
