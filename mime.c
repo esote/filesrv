@@ -315,11 +315,11 @@ exact(uint8_t *data, size_t len, size_t nonws, union ds *argv)
 {
 	(void)nonws;
 
-	if (argv[1].s < len) {
-		len = argv[1].s;
+	if (len < argv[1].s) {
+		return NULL;
 	}
 
-	if (memcmp(data, argv[0].d, len) == 0) {
+	if (memcmp(data, argv[0].d, argv[1].s) == 0) {
 		return argv[2].d;
 	}
 
