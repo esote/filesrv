@@ -194,7 +194,7 @@ writefile(int afd, char *wbuf, char *path, char *time, off_t size, int head)
 		"Content-Length: %zd\r\n"
 		"Content-Type: %s\r\n"
 		"Last-Modified: %s\r\n"
-		"\r\n", (ssize_t)size, sniff(fd), time);
+		"\r\n", (ssize_t)size, sniff(fd, path), time);
 
 	if (n < 0) {
 		warnx("snprintf");

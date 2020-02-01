@@ -1,4 +1,5 @@
-/* MIME sniffing implementation based on Go's http.DetectContentType(). */
+/* MIME sniffing implementation based on Go's http.DetectContentType() and
+ * mime.TypeByExtension(). */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -23,7 +24,10 @@ static char *	masked(uint8_t *, size_t, size_t, union ds *);
 static char *	mp4(uint8_t *, size_t, size_t, union ds *);
 static char *	text(uint8_t *, size_t, size_t, union ds *);
 
-struct sig sigs[] = {
+static char *	sniff_ext(char *);
+static char *	ext(char *);
+
+static struct sig sigs[] = {
 	{ html, {{"<!DOCTYPE HTML"}, {.s = 14}} },
 	{ html, {{"<HTML"}, {.s = 5}} },
 	{ html, {{"<HEAD"}, {.s = 5}} },
@@ -213,13 +217,17 @@ struct sig sigs[] = {
 #define ISTT(X)	((X) == ' ' || (X) == '>')
 
 char *
-sniff(int fd)
+sniff(int fd, char *path)
 {
 	uint8_t buf[512];
 	size_t nonws;
 	ssize_t len;
 	ssize_t i;
 	char *mime;
+
+	if ((mime = sniff_ext(path)) != NULL) {
+		return mime;
+	}
 
 	if ((len = read(fd, buf, 512)) == -1) {
 		goto err;
@@ -242,6 +250,60 @@ err:
 done:
 	(void)lseek(fd, 0, SEEK_SET);
 	return mime;
+}
+
+struct ext_map {
+	char *ext;
+	char *mime;
+};
+
+static struct ext_map ext_map[] = {
+	{ ".css", "text/css; charset=utf-8" },
+	{ ".gif", "image/gif" },
+	{ ".htm", "text/html; charset=utf-8" },
+	{ ".html", "text/html; charset=utf-8" },
+	{ ".jpeg", "image/jpeg" },
+	{ ".jpg", "image/jpeg" },
+	{ ".js", "application/javascript" },
+	{ ".mjs", "application/javascript" },
+	{ ".pdf", "application/pdf" },
+	{ ".png", "image/png" },
+	{ ".svg", "image/svg+xml" },
+	{ ".wasm", "application/wasm" },
+	{ ".webp", "image/webp" },
+	{ ".xml", "text/xml; charset=utf-8" },
+	{ NULL, NULL }
+};
+
+static char *
+sniff_ext(char *path)
+{
+	size_t i;
+	if ((path = ext(path)) == NULL) {
+		return NULL;
+	}
+
+	for (i = 0; ext_map[i].ext != NULL; i++) {
+		if (strcmp(ext_map[i].ext, path) == 0) {
+			return ext_map[i].mime;
+		}
+	}
+
+	return NULL;
+}
+
+static char *
+ext(char *path)
+{
+	int i;
+
+	for (i = (int)strlen(path) - 1; i >= 0 && path[i] != '/'; i--) {
+		if (path[i] == '.') {
+			return path + i;
+		}
+	}
+
+	return NULL;
 }
 
 /* argv[0] = exact signature

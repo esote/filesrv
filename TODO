@@ -1,4 +1,2 @@
 TODO:
 	handle content range requests
-
-	(optionally) infer mime types by file extensions
