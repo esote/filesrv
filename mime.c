@@ -210,7 +210,7 @@ static struct sig sigs[] = {
 	},
 	{ exact, {{"\x00\x61\x73\x6D"}, {.s = 4}, {"application/wasm"}} },
 	{ text, {} },
-	{ NULL }
+	{ NULL, {} }
 };
 
 #define ISWS(X)	((X) == '\t' || (X) == '\n' || (X) == '\x0c' || (X) == '\r' || (X) == ' ')
