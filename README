@@ -8,7 +8,7 @@ DESCRIPTION
 	filesrv is a filesystem web server. It responds with directory listings
 	or file contents based on the request path. The -d option daemonizes the
 	process. The -p option specifies the listening port, otherwise 8080 by
-	default. -t option specifies the read and write timeout, otherwise 10
+	default. -t option specifies the read and write timeout, otherwise 3
 	seconds by default.
 
 	The -u option causes filesrv to drop privileges to the specified user.
